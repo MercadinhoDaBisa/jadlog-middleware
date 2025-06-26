@@ -31,7 +31,7 @@ app.post('/envio-pedido', async (req, res) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': ⁠ Bearer ${process.env.JADLOG_TOKEN} ⁠
+          'Authorization': ⁠' Bearer ${process.env.JADLOG_TOKEN}' ⁠
         }
       }
     );
