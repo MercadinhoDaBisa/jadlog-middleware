@@ -8,7 +8,6 @@ app.use(express.json());
 app.post('/envio-pedido', async (req, res) => {
   try {
     const dadosYampi = req.body;
-,
      const payload = {
   codCliente: process.env.COD_CLIENTE,
   contaCorrente: process.env.CONTA_CORRENTE,
