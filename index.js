@@ -15,10 +15,9 @@ app.post('/envio-pedido', async (req, res) => {
       pedido: [dadosYampi.numero || "pedido-sem-numero"],
       totPeso: dadosYampi.peso || 0.4,
       totValor: dadosYampi.valor || 56.05,
-      modalidade: parseInt(process.env.MODALIDADE),
       tipoFrete: parseInt(process.env.TIPO_FRETE),
+      modalidade: parseInt(process.env.MODALIDADE),
       tipoColeta: "package",
-
       rem: {
         nome: "Mercadinho da Bisa",
         endereco: "Rua Progresso, 280",
@@ -28,42 +27,38 @@ app.post('/envio-pedido', async (req, res) => {
         cep: "30720404",
         cnpjCpf: "59554346000184"
       },
-
-      des: {
-        nome: dadosYampi.nome_destinatario || "Destinatário",
-        endereco: dadosYampi.endereco_destino || "Endereço destino",
-        bairro: dadosYampi.bairro_destino || "Bairro destino",
-        cidade: dadosYampi.cidade_destino || "Cidade destino",
-        uf: dadosYampi.uf_destino || "UF",
-        cep: dadosYampi.cep_destino || "88010140",
-        cnpjCpf: dadosYampi.cpf_destinatario || "00000000000"
+      origem: {
+        cep: "30720404"
       },
+      destino: {
+        cep: dadosYampi.cep_destino || "88010140"
+      },
+      volume: [
+        {
+          peso: dadosYampi.peso || 0.4,
+          altura: dadosYampi.altura || 10,
+          largura: dadosYampi.largura || 10,
+          comprimento: dadosYampi.comprimento || 10,
+          conteudo: dadosYampi.conteudo || "Produtos variados",
+          dfe: [
+            {
+              serie: "1",
+              numero: dadosYampi.numero_nota || "123456",
+              valor: dadosYampi.valor || 56.05
+            }
+          ],
+          vlrMerc: dadosYampi.valor || 56.05
+        }
+      ]
+    };
 
-     volume: [
-  {
-    peso: dadosYampi.peso || 0.4,
-    altura: dadosYampi.altura || 10,
-    largura: dadosYampi.largura || 10,
-    comprimento: dadosYampi.comprimento || 10,
-    vlrMerc: dadosYampi.valor || 56.05,
-    conteudo: dadosYampi.conteudo || "Mercadoria",
-    dfe: [
-      {
-        serie: "1",
-        numero: "123456",
-        valor: dadosYampi.valor || 56.05
-      }
-    ]
-  }
-]
-};
     const resposta = await axios.post(
       'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
       payload,
       {
         headers: {
           'Content-Type': 'application/json',
-'Authorization': `Bearer ${process.env.JADLOG_TOKEN}`
+          'Authorization': `Bearer ${process.env.JADLOG_TOKEN}`
         }
       }
     );
@@ -81,4 +76,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`⁠ervidor rodando na porta ${PORT}}⁠`));
+app.listen(PORT, () => console.log(⁠ Servidor rodando na porta ${PORT} ⁠));
