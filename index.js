@@ -49,7 +49,7 @@ dfe: [
 {
 serie: "1",
 numero: "123456",
-valor: dadosYampi.valor || 100.0
+valor: dadosYampi.valor || 56.05
 }
 ]
           vlrMerc: dadosYampi.valor || 56.05
