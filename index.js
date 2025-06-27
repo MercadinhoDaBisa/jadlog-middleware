@@ -39,24 +39,22 @@ app.post('/envio-pedido', async (req, res) => {
         cnpjCpf: dadosYampi.cpf_destinatario || "00000000000"
       },
 
-      volume: [
-        {
-          peso: dadosYampi.peso || 0.4,
-          altura: dadosYampi.altura || 10,
-          largura: dadosYampi.largura || 10,
-          comprimento: dadosYampi.comprimento || 10,
-dfe: [
-{
-serie: "1",
-numero: "123456",
-valor: dadosYampi.valor || 56.05
-}
+     volume: [
+  {
+    peso: dadosYampi.peso || 0.4,
+    altura: dadosYampi.altura || 10,
+    largura: dadosYampi.largura || 10,
+    comprimento: dadosYampi.comprimento || 10,
+    vlrMerc: dadosYampi.valor || 56.05,
+    dfe: [
+      {
+        serie: "1",
+        numero: "123456",
+        valor: dadosYampi.valor || 56.05
+      }
+    ]
+  }
 ]
-          vlrMerc: dadosYampi.valor || 56.05
-        }
-      ]
-    };
-
     const resposta = await axios.post(
       'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
       payload,
