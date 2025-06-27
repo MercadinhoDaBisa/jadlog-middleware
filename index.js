@@ -50,21 +50,24 @@ app.post('/envio-pedido', async (req, res) => {
   }
 ]
 };
+const agent = new https.Agent({ rejectUnauthorized: false });
+
+  try {
     const resposta = await axios.post(
-      'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
+      'https://api.jadlog.com.br/embarcador/solicitacao',
       payload,
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.JADLOG_TOKEN}`
-        }
+          Authorization:  `Bearer ${process.env.JADLOG_TOKEN}`⁠,
+          'Content-Type': 'application/json'
+        },
+        httpsAgent: agent
       }
     );
 
-    return res.status(200).json({ sucesso: true, resposta: resposta.data 
-});
-
+    res.json(resposta.data);
   } catch (erro) {
+    console.error('Erro na requisição:', erro.message);
     return res.status(500).json({ erro: erro.message });
   }
 });
