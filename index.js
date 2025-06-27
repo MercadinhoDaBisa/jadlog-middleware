@@ -46,6 +46,7 @@ app.post('/envio-pedido', async (req, res) => {
     largura: dadosYampi.largura || 10,
     comprimento: dadosYampi.comprimento || 10,
     vlrMerc: dadosYampi.valor || 56.05,
+    conteudo: dadosYampi.conteudo || "Mercadoria",
     dfe: [
       {
         serie: "1",
