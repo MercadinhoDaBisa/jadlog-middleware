@@ -47,8 +47,8 @@ app.post('/envio-pedido', async (req, res) => {
           comprimento: dadosYampi.comprimento || 10,
 dfe: [
 {
-serie: "1"
-numero: "123456"
+serie: "1",
+numero: "123456",
 valor: dadosYampi.valor || 100.0
 }
 ]
