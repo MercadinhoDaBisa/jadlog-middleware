@@ -55,6 +55,7 @@ app.post('/envio-pedido', async (req, res) => {
     ]
   }
 ]
+};
     const resposta = await axios.post(
       'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
       payload,
