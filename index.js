@@ -34,24 +34,22 @@ app.post('/envio-pedido', async (req, res) => {
         cep: dadosYampi.cep_destino || "88010140"
       },
       volume: [
-        {
-          peso: dadosYampi.peso || 0.4,
-          altura: dadosYampi.altura || 10,
-          largura: dadosYampi.largura || 10,
-          comprimento: dadosYampi.comprimento || 10,
-          conteudo: dadosYampi.conteudo || "Produtos variados",
-          dfe: [
-            {
-              serie: "1",
-              numero: dadosYampi.numero_nota || "123456",
-              valor: dadosYampi.valor || 56.05
-            }
-          ],
-          vlrMerc: dadosYampi.valor || 56.05
-        }
-      ]
-    };
-
+  {
+    peso: 0.4,
+    altura: 10,
+    largura: 10,
+    comprimento: 10,
+    vlrMerc: 56.05,
+    dfe: [
+      {
+        serie: "1",
+        numero: "123456",
+        valor: 56.05
+      }
+    ]
+  }
+]
+};
     const resposta = await axios.post(
       'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
       payload,
