@@ -8,20 +8,41 @@ app.use(express.json());
 app.post('/envio-pedido', async (req, res) => {
   try {
     const dadosYampi = req.body;
-
-    const payload = {
-      codCliente: process.env.COD_CLIENTE,
-      contaCorrente: process.env.CONTA_CORRENTE,
-      pedido: [dadosYampi.numero || "pedido-sem-numero"],
-      totPeso: dadosYampi.peso || 1.0,
-      totValor: dadosYampi.valor || 100.0,
-      modalidade: parseInt(process.env.MODALIDADE),
-      tipoFrete: parseInt(process.env.TIPO_FRETE),
+,
+     const payload = {
+  codCliente: process.env.COD_CLIENTE,
+  contaCorrente: process.env.CONTA_CORRENTE,
+  pedido: [dadosYampi.numero || "pedido-sem-numero"],
+  totPeso: dadosYampi.peso || 0.4,
+  totValor: dadosYampi.valor || 56.05,
+  modalidade: parseInt(process.env.MODALIDADE),
+  tipoFrete: parseInt(process.env.TIPO_FRETE),
+  tipoColeta: dadosYampi.tipoColeta || "package",
+  origem: {
+    cep: dadosYampi.cep_origem || "30720404"
+  },
+  destino: {
+    cep: dadosYampi.cep_destino || "88010140"
+  },
+  rem: {
+    nome: "Mercadinho da Bisa",
+    endereco: "Rua Progresso, 280",
+    bairro: "Padre Eustáquio",
+    cidade: "Belo Horizonte",
+    uf: "MG",
+    cep: "30720404",
+    cnpjCpf: "59554346000184",
+    ie: "123456789"
+  },
+  destinatario: dadosYampi.destinatario,
+  volumes: dadosYampi.volumes
+}; tipoFrete: 
+parseInt(process.env.TIPO_FRETE),
       origem: {
-        cep: dadosYampi.cep_origem || "01153000"
+        cep: dadosYampi.cep_origem || "303720404"
       },
       destino: {
-        cep: dadosYampi.cep_destino || "88010000"
+        cep: dadosYampi.cep_destino || "88010140"
       }
     };
 
