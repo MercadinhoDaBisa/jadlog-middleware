@@ -58,7 +58,7 @@ const agent = new https.Agent({ rejectUnauthorized: false });
       payload,
       {
         headers: {
-          Authorization: `Bearer ${process.env.JADLOG_TOKEN}`⁠,
+ Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
           'Content-Type': 'application/json'
         },
         httpsAgent: agent
