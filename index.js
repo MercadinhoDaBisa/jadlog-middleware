@@ -35,17 +35,16 @@ app.post('/envio-pedido', async (req, res) => {
     },
     volume: [
       {
-        peso: dadosYampi.peso || 0.4,
-        altura: dadosYampi.altura || 10,
-        largura: dadosYampi.largura || 10,
-        comprimento: dadosYampi.comprimento || 10,
-        vlrMerc: dadosYampi.valor || 56.05,
+        peso: 0.4,
+        altura: 10,
+        largura: 10,
+        comprimento: 10,
+        vlrMerc: 56.05,
         dfe: [
           {
             serie: "1",
             numero: "123456",
-            valor: dadosYampi.valor || 56.05,
-            chave: "99999999999999999999550010000000011000000010"
+            valor: 56.05
           }
         ]
       }
@@ -55,17 +54,17 @@ app.post('/envio-pedido', async (req, res) => {
   const agent = new https.Agent({ rejectUnauthorized: false });
 
   try {
-const resposta = await axios.post(
-  'https://api.jadlog.com.br/embarcador/solicitacao',
-  payload,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    httpsAgent: agent
-  }
-);
+    const resposta = await axios.post(
+      'https://api.jadlog.com.br/embarcador/solicitacao',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        httpsAgent: agent
+      }
+    );
 
     res.json(resposta.data);
   } catch (erro) {
