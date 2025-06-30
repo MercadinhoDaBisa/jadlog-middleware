@@ -1,56 +1,58 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const https = require('https');
 
 const app = express();
 app.use(express.json());
 
 app.post('/envio-pedido', async (req, res) => {
-  try {
-    const dadosYampi = req.body;
+  const dadosYampi = req.body;
 
-    const payload = {
-      codCliente: process.env.COD_CLIENTE,
-      contaCorrente: process.env.CONTA_CORRENTE,
-      pedido: [dadosYampi.numero || "pedido-sem-numero"],
-      totPeso: dadosYampi.peso || 0.4,
-      totValor: dadosYampi.valor || 56.05,
-      tipoFrete: parseInt(process.env.TIPO_FRETE),
-      modalidade: parseInt(process.env.MODALIDADE),
-      tipoColeta: "package",
-      rem: {
-        nome: "Mercadinho da Bisa",
-        endereco: "Rua Progresso, 280",
-        bairro: "Padre Eustáquio",
-        cidade: "Belo Horizonte",
-        uf: "MG",
-        cep: "30720404",
-        cnpjCpf: "59554346000184"
-      },
-      origem: {
-        cep: "30720404"
-      },
-      destino: {
-        cep: dadosYampi.cep_destino || "88010140"
-      },
-      volume: [
-  {
-    peso: 0.4,
-    altura: 10,
-    largura: 10,
-    comprimento: 10,
-    vlrMerc: 56.05,
-    dfe: [
+  const payload = {
+    codCliente: process.env.COD_CLIENTE,
+    contaCorrente: process.env.CONTA_CORRENTE,
+    pedido: [dadosYampi.numero || "pedido-sem-numero"],
+    totPeso: dadosYampi.peso || 0.4,
+    totValor: dadosYampi.valor || 56.05,
+    tipoFrete: parseInt(process.env.TIPO_FRETE),
+    modalidade: parseInt(process.env.MODALIDADE),
+    tipoColeta: "package",
+    rem: {
+      nome: "Mercadinho da Bisa",
+      endereco: "Rua Progresso, 280",
+      bairro: "Padre Eustáquio",
+      cidade: "Belo Horizonte",
+      uf: "MG",
+      cep: "30720404",
+      cnpjCpf: "59554346000184"
+    },
+    origem: {
+      cep: "30720404"
+    },
+    destino: {
+      cep: dadosYampi.cep_destino || "88010140"
+    },
+    volume: [
       {
-        serie: "1",
-        numero: "123456",
-        valor: 56.05
+        peso: dadosYampi.peso || 0.4,
+        altura: dadosYampi.altura || 10,
+        largura: dadosYampi.largura || 10,
+        comprimento: dadosYampi.comprimento || 10,
+        vlrMerc: dadosYampi.valor || 56.05,
+        dfe: [
+          {
+            serie: "1",
+            numero: "123456",
+            valor: dadosYampi.valor || 56.05,
+            chave: "99999999999999999999550010000000011000000010"
+          }
+        ]
       }
     ]
-  }
-]
-};
-const agent = new https.Agent({ rejectUnauthorized: false });
+  };
+
+  const agent = new https.Agent({ rejectUnauthorized: false });
 
   try {
     const resposta = await axios.post(
@@ -58,7 +60,7 @@ const agent = new https.Agent({ rejectUnauthorized: false });
       payload,
       {
         headers: {
- Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
+          Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
           'Content-Type': 'application/json'
         },
         httpsAgent: agent
