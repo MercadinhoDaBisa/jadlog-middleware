@@ -55,17 +55,17 @@ app.post('/envio-pedido', async (req, res) => {
   const agent = new https.Agent({ rejectUnauthorized: false });
 
   try {
-    const resposta = await axios.post(
-      'https://api.jadlog.com.br/embarcador/solicitacao',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        httpsAgent: agent
-      }
-    );
+const resposta = await axios.post(
+  'https://api.jadlog.com.br/embarcador/solicitacao',
+  payload,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    httpsAgent: agent
+  }
+);
 
     res.json(resposta.data);
   } catch (erro) {
