@@ -55,7 +55,7 @@ app.post('/envio-pedido', async (req, res) => {
 
   try {
     const resposta = await axios.post(
-      'https://api.jadlog.com.br/embarcador/solicitacao',
+      'https://177.220.172.10/embarcador/solicitacao',
       payload,
       {
         headers: {
