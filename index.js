@@ -61,7 +61,7 @@ app.post('/cotacao', async (req, res) => {
     };
 
     const resposta = await axios.post(
-      'https://api.jadlog.com.br/embarcador/solicitacao',
+      'https://www.jadlog.com.br/embarcador/api/pedido/incluir',
       payload,
       {
         headers: {
