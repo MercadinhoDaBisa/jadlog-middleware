@@ -2,60 +2,66 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
-
 const app = express();
+
 app.use(express.json());
 
-app.post('/envio-pedido', async (req, res) => {
-  const dadosYampi = req.body;
+const agent = new https.Agent({
+  rejectUnauthorized: false,
+});
 
-  const payload = {
-    codCliente: process.env.COD_CLIENTE,
-    contaCorrente: process.env.CONTA_CORRENTE,
-    pedido: [dadosYampi.numero || "pedido-sem-numero"],
-    totPeso: dadosYampi.peso || 0.4,
-    totValor: dadosYampi.valor || 56.05,
-    tipoFrete: parseInt(process.env.TIPO_FRETE),
-    modalidade: parseInt(process.env.MODALIDADE),
-    tipoColeta: "package",
-    rem: {
-      nome: "Mercadinho da Bisa",
-      endereco: "Rua Progresso, 280",
-      bairro: "Padre Eustáquio",
-      cidade: "Belo Horizonte",
-      uf: "MG",
-      cep: "30720404",
-      cnpjCpf: "59554346000184"
-    },
-    origem: {
-      cep: "30720404"
-    },
-    destino: {
-      cep: dadosYampi.cep_destino || "88010140"
-    },
-    volume: [
-      {
-        peso: 0.4,
-        altura: 10,
-        largura: 10,
-        comprimento: 10,
-        vlrMerc: 56.05,
-        dfe: [
-          {
-            serie: "1",
-            numero: "123456",
-            valor: 56.05
-          }
-        ]
-      }
-    ]
-  };
-
-  const agent = new https.Agent({ rejectUnauthorized: false });
-
+app.post('/cotacao', async (req, res) => {
   try {
+    const {
+      totPeso,
+      totValor,
+      des,
+      dfe,
+      volume
+    } = req.body;
+
+    const payload = {
+      codCliente: 0,
+      conteudo: "PRODUTO DIVERSO",
+      pedido: ["pedido"],
+      totPeso,
+      totValor,
+      obs: "OBS XXXXX",
+      modalidade: 3,
+      contaCorrente: null,
+      tpColeta: "S",
+      tipoFrete: 0,
+      cdUnidadeOri: "1",
+      cdUnidadeDes: null,
+      cdPickupOri: null,
+      cdPickupDes: null,
+      nrContrato: null,
+      servico: 1,
+      shipmentId: null,
+      vlColeta: null,
+      rem: {
+        nome: "Mercadinho da Bisa",
+        cnpjCpf: "59554346000184",
+        ie: null,
+        endereco: "Rua Progresso",
+        numero: "280",
+        compl: null,
+        bairro: "BAIRRO",
+        cidade: "Belo Horizonte",
+        uf: "MG",
+        cep: "30720404",
+        fone: "31 71355339",
+        cel: "31 71355339",
+        email: "mercadinhodabisa@gmail.com",
+        contato: "Mercadinho da Bisa"
+      },
+      des,
+      dfe,
+      volume
+    };
+
     const resposta = await axios.post(
-      'https://177.220.172.10/embarcador/solicitacao',
+      'https://api.jadlog.com.br/embarcador/solicitacao',
       payload,
       {
         headers: {
@@ -78,5 +84,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta 
-${PORT}`));
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
