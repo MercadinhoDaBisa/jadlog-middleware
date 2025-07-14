@@ -47,7 +47,8 @@ app.post('/cotacao', async (req, res) => {
         contato: "Mercadinho da Bisa"
       },
       des,
-      volume
+      volume,
+      tpDocumento: 0
     };
 
     const resposta = await axios.post(
@@ -65,6 +66,11 @@ app.post('/cotacao', async (req, res) => {
     res.json(resposta.data);
   } catch (erro) {
     console.error('Erro na requisição:', erro.message);
+    // Tenta extrair a mensagem de erro da API da Jadlog se disponível
+    if (erro.response && erro.response.data) {
+        console.error('Detalhes do erro da Jadlog:', erro.response.data);
+        return res.status(erro.response.status).json({ erro: erro.response.data });
+    }
     return res.status(500).json({ erro: erro.message });
   }
 });
