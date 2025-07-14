@@ -16,14 +16,24 @@ app.post('/cotacao', async (req, res) => {
       totPeso,
       totValor,
       des,
-      dfe,
       volume
     } = req.body;
 
+    const volumeCorrigido = volume.map(v => ({
+      ...v,
+      dfe: v.dfe || [
+        {
+          serie: "1",
+          numero: "123456",
+          valor: v.vlrMerc || 0
+        }
+      ]
+    }));
+
     const payload = {
-      codCliente: 0,
+      codCliente: parseInt(process.env.COD_CLIENTE),
       conteudo: "PRODUTO DIVERSO",
-      pedido: ["pedido"],
+      pedido: ["pedido-123"],
       totPeso,
       totValor,
       obs: "OBS XXXXX",
@@ -47,8 +57,7 @@ app.post('/cotacao', async (req, res) => {
         contato: "Mercadinho da Bisa"
       },
       des,
-      dfe,
-      volume
+      volume: volumeCorrigido
     };
 
     const resposta = await axios.post(
