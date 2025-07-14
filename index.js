@@ -2,12 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
-const app = express();
 
+const app = express();
 app.use(express.json());
 
 const agent = new https.Agent({
-  rejectUnauthorized: false,
+  rejectUnauthorized: false
 });
 
 app.post('/cotacao', async (req, res) => {
@@ -19,27 +19,17 @@ app.post('/cotacao', async (req, res) => {
       volume
     } = req.body;
 
-    const volumeCorrigido = volume.map(v => ({
-      ...v,
-      dfe: v.dfe || [
-        {
-          serie: "1",
-          numero: "123456",
-          valor: v.vlrMerc || 0
-        }
-      ]
-    }));
-
     const payload = {
       codCliente: parseInt(process.env.COD_CLIENTE),
+      contaCorrente: process.env.CONTA_CORRENTE || null,
       conteudo: "PRODUTO DIVERSO",
-      pedido: ["pedido-123"],
+      pedido: ["pedido123"],
       totPeso,
       totValor,
-      obs: "OBS XXXXX",
-      modalidade: 3,
+      obs: "Pedido enviado pela API",
+      modalidade: parseInt(process.env.MODALIDADE),
       tpColeta: "S",
-      tipoFrete: 0,
+      tipoFrete: parseInt(process.env.TIPO_FRETE),
       cdUnidadeOri: "1",
       servico: 1,
       rem: {
@@ -47,17 +37,17 @@ app.post('/cotacao', async (req, res) => {
         cnpjCpf: "59554346000184",
         endereco: "Rua Progresso",
         numero: "280",
-        bairro: "BAIRRO",
+        bairro: "Padre Eustáquio",
         cidade: "Belo Horizonte",
         uf: "MG",
         cep: "30720404",
-        fone: "31 71355339",
-        cel: "31 71355339",
+        fone: "3171355339",
+        cel: "3171355339",
         email: "mercadinhodabisa@gmail.com",
         contato: "Mercadinho da Bisa"
       },
       des,
-      volume: volumeCorrigido
+      volume
     };
 
     const resposta = await axios.post(
