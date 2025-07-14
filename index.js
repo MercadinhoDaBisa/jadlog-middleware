@@ -20,23 +20,32 @@ app.post('/cotacao', async (req, res) => {
     } = req.body;
 
     const payload = {
-      codCliente: parseInt(process.env.COD_CLIENTE),
-      contaCorrente: process.env.CONTA_CORRENTE || null,
+      codCliente: process.env.COD_CLIENTE,
       conteudo: "PRODUTO DIVERSO",
       pedido: ["pedido123"],
       totPeso,
       totValor,
       obs: "Pedido enviado pela API",
       modalidade: parseInt(process.env.MODALIDADE),
-      tpColeta: "S",
+      contaCorrente: process.env.CONTA_CORRENTE || null,
+      tpColeta: "K", 
       tipoFrete: parseInt(process.env.TIPO_FRETE),
       cdUnidadeOri: "1",
+      cdUnidadeDes: null,
+      cdPickupOri: null,
+      cdPickupDes: null,
+      nrContrato: null,
       servico: 1,
+      shipmentId: null,
+      vlColeta: null,
+      
       rem: {
         nome: "Mercadinho da Bisa",
         cnpjCpf: "59554346000184",
+        ie: null,
         endereco: "Rua Progresso",
         numero: "280",
+        compl: null,
         bairro: "Padre Eustáquio",
         cidade: "Belo Horizonte",
         uf: "MG",
@@ -46,9 +55,25 @@ app.post('/cotacao', async (req, res) => {
         email: "mercadinhodabisa@gmail.com",
         contato: "Mercadinho da Bisa"
       },
-      des,
-      volume,
-      tpDocumento: 0
+      des: {
+        ...des,
+        ie: des.ie || null,
+        compl: des.compl || null
+      },
+      dfe: [
+        {
+          "cfop": "0",
+          "danfeCte": "0000000000000000000000000000000000000000",
+          "nrDoc": "000000",
+          "serie": "1",
+          "tpDocumento": 0,
+          "valor": totValor
+        }
+      ],
+      volume: volume.map(vol => ({
+          ...vol,
+          identificador: vol.identificador || "PADRAO_VOLUME"
+      }))
     };
 
     const resposta = await axios.post(
@@ -66,7 +91,6 @@ app.post('/cotacao', async (req, res) => {
     res.json(resposta.data);
   } catch (erro) {
     console.error('Erro na requisição:', erro.message);
-    // Tenta extrair a mensagem de erro da API da Jadlog se disponível
     if (erro.response && erro.response.data) {
         console.error('Detalhes do erro da Jadlog:', erro.response.data);
         return res.status(erro.response.status).json({ erro: erro.response.data });
