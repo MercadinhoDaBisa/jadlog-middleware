@@ -27,49 +27,37 @@ app.post('/cotacao', async (req, res) => {
       volume
     } = req.body;
 
+    // Payload simplificado para a API de COTAÇÃO de frete da Jadlog
+    // Removidos campos específicos de "inclusão de pedido" como 'pedido', 'obs', 'dfe', etc.
     const payloadCotacao = {
-      codCliente: process.env.COD_CLIENTE,
-      modalidade: parseInt(process.env.MODALIDADE),
-      contaCorrente: process.env.CONTA_CORRENTE || null,
-      tpColeta: "K",
-      tipoFrete: parseInt(process.env.TIPO_FRETE),
-      cdUnidadeOri: "1",
-      cdUnidadeDes: null,
-      cdPickupOri: null,
-      cdPickupDes: null,
-      nrContrato: null,
-      servico: 1,
-      totPeso,
-      totValor,
       rem: {
-        nome: "Mercadinho da Bisa",
-        cnpjCpf: "59554346000184",
-        ie: null,
-        endereco: "Rua Progresso",
-        numero: "280",
-        compl: null,
-        bairro: "Padre Eustáquio",
-        cidade: "Belo Horizonte",
-        uf: "MG",
-        cep: "30720404",
-        fone: "3171355339",
-        cel: "3171355339",
-        email: "mercadinhodabisa@gmail.com",
-        contato: "Mercadinho da Bisa"
+        cnpjCpf: "59554346000184", // CNPJ/CPF do seu Remetente fixo
+        cep: "30720404" // CEP do seu Remetente fixo
       },
+      // Dados do destinatário vindo da Yampi
       des: {
-        ...des,
-        ie: des.ie || null,
-        compl: des.compl || null
+        cnpjCpf: des.cnpjCpf || "09144091664", // CNPJ/CPF do Destinatário da Yampi
+        cep: des.cep // CEP do Destinatário da Yampi
       },
-      volume: volume.map(vol => ({
-          ...vol,
-          identificador: vol.identificador || "PADRAO_VOLUME"
+      vlrMerc: totValor, // Valor total da mercadoria vindo da Yampi
+      pesoEfetivo: totPeso, // Peso total da mercadoria vindo da Yampi
+      modalidade: parseInt(process.env.MODALIDADE), // Modalidade Jadlog do seu .env
+      tipoFrete: parseInt(process.env.TIPO_FRETE), // Tipo de Frete Jadlog do seu .env
+      frap: false, // Geralmente false para simulação de frete normal
+      cte: false, // Geralmente false para simulação de frete normal
+      entregaParcial: false, // Geralmente false para simulação de frete normal
+      // A Jadlog pode precisar dos detalhes de cada volume para cotação
+      // Assumindo que os dados de volume vindos da Yampi são compatíveis
+      volumes: volume.map(vol => ({
+        peso: vol.peso,
+        altura: vol.altura,
+        largura: vol.largura,
+        comprimento: vol.comprimento
       }))
     };
 
     const respostaJadlog = await axios.post(
-      'https://www.jadlog.com.br/embarcador/api/frete/cotar',
+      'https://www.jadlog.com.br/embarcador/api/frete/valor', // **ENDPOINT CORRETO PARA COTAÇÃO**
       payloadCotacao,
       {
         headers: {
@@ -80,16 +68,20 @@ app.post('/cotacao', async (req, res) => {
       }
     );
 
+    // Adaptação da resposta da Jadlog para o formato esperado pela Yampi
+    // A API de cotação da Jadlog geralmente retorna um array de objetos,
+    // onde cada objeto é uma opção de frete (Ex: Jadlog Expresso, Jadlog Package).
     const opcoesFrete = [];
     if (respostaJadlog.data && Array.isArray(respostaJadlog.data.fretes) && respostaJadlog.data.fretes.length > 0) {
       respostaJadlog.data.fretes.forEach(frete => {
         opcoesFrete.push({
-          nome: frete.modalidade || "Jadlog Padrão",
-          valor: frete.valorFrete || 0,
-          prazo: frete.prazoEntrega || 0
+          nome: frete.modalidade || "Jadlog Padrão", // Nome da modalidade de frete
+          valor: frete.valorFrete || 0, // Valor do frete
+          prazo: frete.prazoEntrega || 0 // Prazo de entrega em dias
         });
       });
     } else if (respostaJadlog.data && respostaJadlog.data.valorFrete !== undefined && respostaJadlog.data.prazoEntrega !== undefined) {
+        // Caso a API retorne um único objeto diretamente
         opcoesFrete.push({
           nome: "Jadlog Padrão",
           valor: respostaJadlog.data.valorFrete,
