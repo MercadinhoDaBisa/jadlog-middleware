@@ -28,7 +28,7 @@ app.post('/cotacao', async (req, res) => {
       obs: "Pedido enviado pela API",
       modalidade: parseInt(process.env.MODALIDADE),
       contaCorrente: process.env.CONTA_CORRENTE || null,
-      tpColeta: "K", 
+      tpColeta: "S", 
       tipoFrete: parseInt(process.env.TIPO_FRETE),
       cdUnidadeOri: "1",
       cdUnidadeDes: null,
