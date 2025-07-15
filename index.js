@@ -69,7 +69,7 @@ app.post('/cotacao', async (req, res) => {
     };
 
     const respostaJadlog = await axios.post(
-      'https://www.jadlog.com.br/embarcador/api/frete/cotar', // Endpoint para cotação de frete
+      'https://www.jadlog.com.br/embarcador/api/frete/cotar',
       payloadCotacao,
       {
         headers: {
@@ -80,20 +80,16 @@ app.post('/cotacao', async (req, res) => {
       }
     );
 
-    // Adaptação da resposta da Jadlog para o formato esperado pela Yampi
-    // Assumimos que a resposta da Jadlog para cotação terá um array de resultados
-    // e que o valor e prazo estarão em campos como 'valorFrete' e 'prazoEntrega'
     const opcoesFrete = [];
     if (respostaJadlog.data && Array.isArray(respostaJadlog.data.fretes) && respostaJadlog.data.fretes.length > 0) {
       respostaJadlog.data.fretes.forEach(frete => {
         opcoesFrete.push({
-          nome: frete.modalidade || "Jadlog Padrão", // Nome da modalidade de frete
-          valor: frete.valorFrete || 0, // Valor do frete
-          prazo: frete.prazoEntrega || 0 // Prazo de entrega em dias
+          nome: frete.modalidade || "Jadlog Padrão",
+          valor: frete.valorFrete || 0,
+          prazo: frete.prazoEntrega || 0
         });
       });
     } else if (respostaJadlog.data && respostaJadlog.data.valorFrete !== undefined && respostaJadlog.data.prazoEntrega !== undefined) {
-        // Caso a API retorne um único objeto diretamente, sem um array 'fretes'
         opcoesFrete.push({
           nome: "Jadlog Padrão",
           valor: respostaJadlog.data.valorFrete,
