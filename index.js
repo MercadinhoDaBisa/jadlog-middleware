@@ -74,8 +74,23 @@ app.post('/cotacao', async (req, res) => {
     // A resposta da Jadlog também é um array 'frete'
     if (respostaJadlog.data && Array.isArray(respostaJadlog.data.frete) && respostaJadlog.data.frete.length > 0) {
       respostaJadlog.data.frete.forEach(frete => {
+        let nomeModalidade = "Jadlog Padrão"; // Nome padrão caso não encontre
+        
+        // Mapeamento das modalidades para nomes amigáveis
+        switch (frete.modalidade) {
+          case 3:
+            nomeModalidade = "Jadlog Package";
+            break;
+          case 5:
+            nomeModalidade = "Jadlog Econômico";
+            break;
+          // Adicione mais cases se tiver outras modalidades no futuro
+          default:
+            nomeModalidade = `Jadlog (Mod. ${frete.modalidade})`; // Se vier outra, mostra o código
+        }
+
         opcoesFrete.push({
-          nome: frete.modalidade || "Jadlog Padrão", // Nome da modalidade de frete
+          nome: nomeModalidade, // Agora com o nome amigável
           valor: frete.vltotal || 0, // Valor total do frete (vltotal no retorno)
           prazo: frete.prazo || 0 // Prazo de entrega em dias (prazo no retorno)
         });
