@@ -19,16 +19,17 @@ const agent = new https.Agent({
 const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
 
 app.post('/cotacao', async (req, res) => {
-  const yampiSignature = req.headers['x-yampi-hmac-sha256']; // O header correto da Yampi
+  // Ajuste CRUCIAL aqui: o nome do header é EXATAMENTE 'X-Yampi-Hmac-SHA256'
+  const yampiSignature = req.headers['X-Yampi-Hmac-SHA256']; 
   const requestBodyRaw = req.body; // O corpo bruto da requisição
 
-  // --- LOGS DE DIAGNÓSTICO DE SEGURANÇA ---
+  // --- LOGS DE DIAGNÓSTICO DE SEGURANÇA (Mantenha para testes, remova em produção se quiser) ---
   console.log('--- DIAGNÓSTICO DE SEGURANÇA YAMPI ---');
   console.log('Assinatura Yampi recebida (X-Yampi-Hmac-SHA256):', yampiSignature);
   console.log('Chave Secreta Yampi (YAMPI_SECRET_TOKEN do .env/Render):', YAMPI_SECRET_TOKEN);
   console.log('Tipo da Assinatura recebida:', typeof yampiSignature);
   console.log('Tipo da Chave Secreta:', typeof YAMPI_SECRET_TOKEN);
-  // console.log('Corpo bruto da requisição:', requestBodyRaw ? requestBodyRaw.toString() : 'N/A'); // Não exibir em produção, pode ser grande
+  // console.log('Corpo bruto da requisição:', requestBodyRaw ? requestBodyRaw.toString() : 'N/A'); 
   // --- FIM DOS LOGS DE DIAGNÓSTICO ---
 
   // 1. Verificar se a assinatura e a chave secreta existem
@@ -65,7 +66,7 @@ app.post('/cotacao', async (req, res) => {
 
 
   try {
-    // IMPORTANTE: Agora que o corpo bruto foi processado pelo express.raw,
+    // Agora que o corpo bruto foi processado pelo express.raw,
     // o req.body original (o JSON parseado) não está mais diretamente disponível.
     // Precisamos re-parsear o corpo bruto para JSON para acessar os dados.
     const reqBodyParsed = JSON.parse(requestBodyRaw.toString('utf8'));
@@ -144,7 +145,7 @@ app.post('/cotacao', async (req, res) => {
     res.json(opcoesFrete);
 
   } catch (erro) {
-    console.error('Erro na requisição Jadlog:', erro.message); // Mudei o log para ser mais específico
+    console.error('Erro na requisição Jadlog:', erro.message); 
     if (erro.response && erro.response.data) {
         console.error('Detalhes do erro da Jadlog:', erro.response.data);
         return res.status(erro.response.status).json({ erro: erro.response.data });
