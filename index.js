@@ -2,9 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
+const crypto = require('crypto'); // Módulo nativo do Node.js para criptografia
 
 const app = express();
-app.use(express.json());
+
+// Middleware para obter o corpo bruto da requisição ANTES de ser parseado como JSON
+// Este middleware DEVE vir antes de app.use(express.json());
+app.use(express.raw({ type: 'application/json' })); 
+
+app.use(express.json()); // Agora o JSON pode ser parseado para req.body
 
 const agent = new https.Agent({
   rejectUnauthorized: false
@@ -13,28 +19,63 @@ const agent = new https.Agent({
 const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
 
 app.post('/cotacao', async (req, res) => {
-  const yampiToken = req.headers['x-yampi-token'];
+  const yampiSignature = req.headers['x-yampi-hmac-sha256']; // O header correto da Yampi
+  const requestBodyRaw = req.body; // O corpo bruto da requisição
 
-  // --- LOGS DE DIAGNÓSTICO (Mantenha para testes, remova em produção se quiser) ---
-  console.log('--- DIAGNÓSTICO DE TOKEN ---');
-  console.log('Token recebido (X-Yampi-Token):', yampiToken);
-  console.log('Token esperado (YAMPI_SECRET_TOKEN do .env/Render):', YAMPI_SECRET_TOKEN);
-  console.log('Tokens são iguais?', yampiToken === YAMPI_SECRET_TOKEN);
-  console.log('Tipo do token recebido:', typeof yampiToken);
-  console.log('Tipo do token esperado:', typeof YAMPI_SECRET_TOKEN);
+  // --- LOGS DE DIAGNÓSTICO DE SEGURANÇA ---
+  console.log('--- DIAGNÓSTICO DE SEGURANÇA YAMPI ---');
+  console.log('Assinatura Yampi recebida (X-Yampi-Hmac-SHA256):', yampiSignature);
+  console.log('Chave Secreta Yampi (YAMPI_SECRET_TOKEN do .env/Render):', YAMPI_SECRET_TOKEN);
+  console.log('Tipo da Assinatura recebida:', typeof yampiSignature);
+  console.log('Tipo da Chave Secreta:', typeof YAMPI_SECRET_TOKEN);
+  // console.log('Corpo bruto da requisição:', requestBodyRaw ? requestBodyRaw.toString() : 'N/A'); // Não exibir em produção, pode ser grande
   // --- FIM DOS LOGS DE DIAGNÓSTICO ---
 
-  if (!yampiToken || yampiToken !== YAMPI_SECRET_TOKEN) {
-    return res.status(401).json({ error: 'Acesso não autorizado. Token Yampi inválido.' });
+  // 1. Verificar se a assinatura e a chave secreta existem
+  if (!yampiSignature || !YAMPI_SECRET_TOKEN) {
+    console.error('Erro de Segurança: Assinatura Yampi ou Chave Secreta ausente.');
+    return res.status(401).json({ error: 'Acesso não autorizado. Assinatura ou Chave Secreta Yampi ausente.' });
   }
 
+  // 2. Calcular a assinatura no seu lado
+  let calculatedSignature;
   try {
+    const hmac = crypto.createHmac('sha256', YAMPI_SECRET_TOKEN);
+    // requestBodyRaw é um Buffer por causa do express.raw(). Precisamos convertê-lo para string.
+    hmac.update(requestBodyRaw.toString('utf8')); 
+    calculatedSignature = hmac.digest('base64');
+  } catch (error) {
+    console.error('Erro ao calcular a assinatura HMAC:', error.message);
+    return res.status(500).json({ error: 'Erro interno na validação de segurança.' });
+  }
+
+  // --- LOGS DE DIAGNÓSTICO DE COMPARAÇÃO ---
+  console.log('Assinatura Calculada:', calculatedSignature);
+  console.log('Assinaturas são iguais?', calculatedSignature === yampiSignature);
+  // --- FIM DOS LOGS DE DIAGNÓSTICO ---
+
+  // 3. Comparar as assinaturas
+  if (calculatedSignature !== yampiSignature) {
+    console.error('Erro de Segurança: Assinatura Yampi inválida. Calculada:', calculatedSignature, 'Recebida:', yampiSignature);
+    return res.status(401).json({ error: 'Acesso não autorizado. Assinatura Yampi inválida.' });
+  }
+
+  // Se chegou até aqui, a requisição é válida e segura
+  console.log('Validação de segurança Yampi: SUCESSO!');
+
+
+  try {
+    // IMPORTANTE: Agora que o corpo bruto foi processado pelo express.raw,
+    // o req.body original (o JSON parseado) não está mais diretamente disponível.
+    // Precisamos re-parsear o corpo bruto para JSON para acessar os dados.
+    const reqBodyParsed = JSON.parse(requestBodyRaw.toString('utf8'));
+
     const {
       totPeso,
       totValor,
       des, // Destinatário da Yampi
       volume // Volumes da Yampi (não usados diretamente no payload da Jadlog para cotação)
-    } = req.body;
+    } = reqBodyParsed; // Use o corpo parseado aqui!
 
     // Converte o CNPJ/CPF do destinatário para o formato esperado pela Jadlog (apenas números)
     const cnpjCpfDestinatario = des.cnpjCpf ? des.cnpjCpf.replace(/\D/g, '') : null;
@@ -84,7 +125,6 @@ app.post('/cotacao', async (req, res) => {
           case 5:
             nomeModalidade = "Jadlog Econômico";
             break;
-          // Adicione mais cases se tiver outras modalidades no futuro
           default:
             nomeModalidade = `Jadlog (Mod. ${frete.modalidade})`; // Se vier outra, mostra o código
         }
@@ -104,7 +144,7 @@ app.post('/cotacao', async (req, res) => {
     res.json(opcoesFrete);
 
   } catch (erro) {
-    console.error('Erro na requisição:', erro.message);
+    console.error('Erro na requisição Jadlog:', erro.message); // Mudei o log para ser mais específico
     if (erro.response && erro.response.data) {
         console.error('Detalhes do erro da Jadlog:', erro.response.data);
         return res.status(erro.response.status).json({ erro: erro.response.data });
