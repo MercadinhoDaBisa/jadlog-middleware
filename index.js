@@ -15,6 +15,15 @@ const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
 app.post('/cotacao', async (req, res) => {
   const yampiToken = req.headers['x-yampi-token'];
 
+  // --- LOGS DE DIAGNÓSTICO ---
+  console.log('--- DIAGNÓSTICO DE TOKEN ---');
+  console.log('Token recebido (X-Yampi-Token):', yampiToken);
+  console.log('Token esperado (YAMPI_SECRET_TOKEN do .env/Render):', YAMPI_SECRET_TOKEN);
+  console.log('Tokens são iguais?', yampiToken === YAMPI_SECRET_TOKEN);
+  console.log('Tipo do token recebido:', typeof yampiToken);
+  console.log('Tipo do token esperado:', typeof YAMPI_SECRET_TOKEN);
+  // --- FIM DOS LOGS DE DIAGNÓSTICO ---
+
   if (!yampiToken || yampiToken !== YAMPI_SECRET_TOKEN) {
     return res.status(401).json({ error: 'Acesso não autorizado. Token Yampi inválido.' });
   }
@@ -29,7 +38,7 @@ app.post('/cotacao', async (req, res) => {
 
     const payloadCotacao = {
       rem: {
-        cnpjCpf: "59554346000184", // CNPJ do Mercadinho da Bisa
+        cnpjCpf: "59554346000184",
         cep: "30720404"
       },
       des: {
