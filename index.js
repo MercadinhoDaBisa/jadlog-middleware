@@ -29,6 +29,10 @@ const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
 
 // Rota POST para a cotação de frete, que a Yampi chamará.
 app.post('/cotacao', async (req, res) => {
+  // --- NOVA LINHA DE LOG: MOSTRA TODOS OS HEADERS RECEBIDOS ---
+  console.log('Todos os Headers Recebidos:', req.headers);
+  // --- FIM DA NOVA LINHA DE LOG ---
+
   // Lê o header de segurança da Yampi.
   // Usamos o nome EXATO que a Yampi informou, respeitando maiúsculas e minúsculas.
   const yampiSignature = req.headers['X-Yampi-Hmac-SHA256']; 
