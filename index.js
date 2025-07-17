@@ -15,7 +15,7 @@ const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
 app.post('/cotacao', async (req, res) => {
   const yampiToken = req.headers['x-yampi-token'];
 
-  // --- LOGS DE DIAGNÓSTICO ---
+  // --- LOGS DE DIAGNÓSTICO (Mantenha para testes, remova em produção se quiser) ---
   console.log('--- DIAGNÓSTICO DE TOKEN ---');
   console.log('Token recebido (X-Yampi-Token):', yampiToken);
   console.log('Token esperado (YAMPI_SECRET_TOKEN do .env/Render):', YAMPI_SECRET_TOKEN);
@@ -32,37 +32,35 @@ app.post('/cotacao', async (req, res) => {
     const {
       totPeso,
       totValor,
-      des,
-      volume
+      des, // Destinatário da Yampi
+      volume // Volumes da Yampi (não usados diretamente no payload da Jadlog para cotação)
     } = req.body;
 
+    // Converte o CNPJ/CPF do destinatário para o formato esperado pela Jadlog (apenas números)
+    const cnpjCpfDestinatario = des.cnpjCpf ? des.cnpjCpf.replace(/\D/g, '') : null;
+    const cepDestinatario = des.cep ? des.cep.replace(/\D/g, '') : null;
+
+    // Payload ajustado para o formato do "Simulador de Frete" da Jadlog
     const payloadCotacao = {
-      rem: {
-        cnpjCpf: "59554346000184",
-        cep: "30720404"
-      },
-      des: {
-        cnpjCpf: des.cnpjCpf || null,
-        cep: des.cep
-      },
-      vlrMerc: totValor,
-      pesoEfetivo: totPeso,
-      modalidade: parseInt(process.env.MODALIDADE),
-      tipoFrete: parseInt(process.env.TIPO_FRETE),
-      frap: false,
-      cte: false,
-      entregaParcial: false,
-      volumes: volume.map(vol => ({
-        peso: vol.peso,
-        altura: vol.altura,
-        largura: vol.largura,
-        comprimento: vol.comprimento
-      }))
+      frete: [{
+        cepori: "30720404", // CEP do remetente (Mercadinho da Bisa)
+        cepdes: cepDestinatario, // CEP do destinatário vindo da Yampi
+        frap: null, // Conforme documentação, pode ser null
+        peso: totPeso, // Peso total da mercadoria vindo da Yampi
+        cnpj: "59554346000184", // CNPJ do remetente (Mercadinho da Bisa)
+        conta: process.env.CONTA_CORRENTE || null, // Puxa do .env, se não tiver, é null
+        contrato: null, // Conforme documentação, pode ser null
+        modalidade: parseInt(process.env.MODALIDADE), // Modalidade Jadlog do seu .env
+        tpentrega: "D", // Tipo de entrega "D" (Domiciliar), conforme exemplo
+        tpseguro: "N", // Tipo de seguro "N" (Não), conforme exemplo
+        vldeclarado: totValor, // Valor total da mercadoria vindo da Yampi
+        vlcoleta: 0 // Valor da coleta, conforme exemplo
+      }]
     };
 
     const respostaJadlog = await axios.post(
-      'https://www.jadlog.com.br/embarcador/api/frete/valor',
-      payloadCotacao,
+      'https://www.jadlog.com.br/embarcador/api/frete/valor', // Endpoint correto
+      payloadCotacao, // Payload no formato correto da Jadlog
       {
         headers: {
           Authorization: `Bearer ${process.env.JADLOG_TOKEN}`,
@@ -73,20 +71,19 @@ app.post('/cotacao', async (req, res) => {
     );
 
     const opcoesFrete = [];
-    if (respostaJadlog.data && Array.isArray(respostaJadlog.data.fretes) && respostaJadlog.data.fretes.length > 0) {
-      respostaJadlog.data.fretes.forEach(frete => {
+    // A resposta da Jadlog também é um array 'frete'
+    if (respostaJadlog.data && Array.isArray(respostaJadlog.data.frete) && respostaJadlog.data.frete.length > 0) {
+      respostaJadlog.data.frete.forEach(frete => {
         opcoesFrete.push({
-          nome: frete.modalidade || "Jadlog Padrão",
-          valor: frete.valorFrete || 0,
-          prazo: frete.prazoEntrega || 0
+          nome: frete.modalidade || "Jadlog Padrão", // Nome da modalidade de frete
+          valor: frete.vltotal || 0, // Valor total do frete (vltotal no retorno)
+          prazo: frete.prazo || 0 // Prazo de entrega em dias (prazo no retorno)
         });
       });
-    } else if (respostaJadlog.data && respostaJadlog.data.valorFrete !== undefined && respostaJadlog.data.prazoEntrega !== undefined) {
-        opcoesFrete.push({
-          nome: "Jadlog Padrão",
-          valor: respostaJadlog.data.valorFrete,
-          prazo: respostaJadlog.data.prazoEntrega
-        });
+    } else {
+        // Caso a API retorne um formato inesperado ou vazio
+        console.warn('Resposta da Jadlog não contém fretes no formato esperado:', respostaJadlog.data);
+        // Opcional: Adicionar uma opção de frete padrão ou erro para o usuário
     }
 
     res.json(opcoesFrete);
