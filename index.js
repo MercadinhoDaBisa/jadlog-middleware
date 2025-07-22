@@ -70,21 +70,25 @@ app.post('/cotacao', async (req, res) => {
       });
     }
 
+    // --- MUDANÇA AQUI: Criar um array de objetos para cada modalidade desejada ---
+    const modalidadesDesejadas = [3, 5]; // Adicione 5 para Econômico
+    const freteRequests = modalidadesDesejadas.map(modalidade => ({
+      cepori: "30720404",
+      cepdes: cepDestino,
+      frap: null,
+      peso: pesoTotal,
+      cnpj: "59554346000184",
+      conta: process.env.CONTA_CORRENTE || null,
+      contrato: null,
+      modalidade: modalidade, // Usando a modalidade do loop
+      tpentrega: "D",
+      tpseguro: "N",
+      vldeclarado: valorDeclarado,
+      vlcoleta: 0
+    }));
+
     const payloadCotacaoJadlog = {
-      frete: [{
-        cepori: "30720404",
-        cepdes: cepDestino,
-        frap: null,
-        peso: pesoTotal,
-        cnpj: "59554346000184",
-        conta: process.env.CONTA_CORRENTE || null,
-        contrato: null,
-        modalidade: parseInt(process.env.MODALIDADE),
-        tpentrega: "D",
-        tpseguro: "N",
-        vldeclarado: valorDeclarado,
-        vlcoleta: 0
-      }]
+      frete: freteRequests // Enviando o array de requisições de frete
     };
 
     console.log('Payload Jadlog Enviado:', JSON.stringify(payloadCotacaoJadlog, null, 2));
@@ -107,14 +111,14 @@ app.post('/cotacao', async (req, res) => {
     if (respostaJadlog.data && Array.isArray(respostaJadlog.data.frete) && respostaJadlog.data.frete.length > 0) {
       respostaJadlog.data.frete.forEach(frete => {
         let nomeModalidade = "Jadlog Padrão"; 
-        let serviceModalidade = "Jadlog"; // Campo 'service'
+        let serviceModalidade = "Jadlog"; 
         
         switch (frete.modalidade) {
           case 3:
             nomeModalidade = "Jadlog Package";
             serviceModalidade = "Jadlog Package";
             break;
-          case 5:
+          case 5: // NOVO CASE: Para a modalidade Econômico
             nomeModalidade = "Jadlog Econômico";
             serviceModalidade = "Jadlog Economico";
             break;
@@ -124,25 +128,23 @@ app.post('/cotacao', async (req, res) => {
         }
 
         opcoesFrete.push({
-          "name": nomeModalidade, // Ajuste para o nome do campo da Yampi
-          "service": serviceModalidade, // Novo campo para a Yampi
-          "price": frete.vltotal || 0, // Ajuste para o nome do campo da Yampi
-          "days": frete.prazo || 0, // Ajuste para o nome do campo da Yampi
-          "quote_id": 1 // Adicionado conforme documentação da Yampi (pode ser um ID único)
+          "name": nomeModalidade,
+          "service": serviceModalidade,
+          "price": frete.vltotal || 0,
+          "days": frete.prazo || 0,
+          "quote_id": frete.modalidade // Usando a modalidade como quote_id para diferenciar
         });
       });
     } else {
         console.warn('Resposta da Jadlog não contém fretes no formato esperado ou está vazia:', respostaJadlog.data);
     }
 
-    // --- MUDANÇA CRUCIAL: Envolver o array de fretes no objeto "quotes" ---
     const respostaFinalYampi = {
       "quotes": opcoesFrete
     };
 
     console.log('Resposta FINAL enviada para Yampi:', JSON.stringify(respostaFinalYampi, null, 2));
 
-    // Envia a resposta final para a Yampi no formato esperado.
     res.json(respostaFinalYampi); 
 
   } catch (erro) {
