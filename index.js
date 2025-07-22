@@ -168,6 +168,10 @@ app.post('/cotacao', async (req, res) => {
         console.warn('Resposta da Jadlog não contém fretes no formato esperado ou está vazia:', respostaJadlog.data);
     }
 
+    // --- NOVA LINHA DE LOG: MOSTRA A RESPOSTA FINAL ENVIADA PARA YAMPI ---
+    console.log('Resposta FINAL enviada para Yampi:', JSON.stringify(opcoesFrete, null, 2));
+    // --- FIM DA NOVA LINHA DE LOG ---
+
     // Envia as opções de frete de volta para a Yampi no formato esperado.
     res.json(opcoesFrete);
 
