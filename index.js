@@ -77,7 +77,7 @@ app.post('/cotacao', async (req, res) => {
       cepdes: cepDestino,
       frap: null,
       peso: pesoTotal,
-      cnpj: process.env.JADLOG_CNPJ,
+      cnpj: "59554346000184",
       conta: process.env.CONTA_CORRENTE || null,
       contrato: null,
       modalidade: modalidade, // Usando a modalidade do loop
