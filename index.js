@@ -78,7 +78,7 @@ app.post('/cotacao', async (req, res) => {
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
-                        "frap": null, 
+                        "frap": N, 
                         "peso": pesoTotal,
                         "cnpj": process.env.JADLOG_USER, // Usando JADLOG_USER diretamente do process.env
                         "conta": process.env.COD_CLIENTE, // Usando COD_CLIENTE diretamente do process.env
