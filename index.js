@@ -1,5 +1,5 @@
 require('dotenv').config();
-const express = require = require('express');
+const express = require('express'); // <<<<<<< LINHA CORRIGIDA AQUI!
 const axios = require('axios');
 const crypto = require('crypto');
 const https = require('https'); 
@@ -82,10 +82,8 @@ app.post('/cotacao', async (req, res) => {
                         "cepdes": cepDestino,
                         "frap": null,
                         "peso": pesoTotal,
-                        // <<<<<<< ATENÇÃO AQUI! RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
-                        "cnpj": JADLOG_CPF_CNPJ, // CNPJ do remetente
-                        "conta": JADLOG_ID_EMPRESA, // Conta do correntista (ou null se não for necessário)
-                        // <<<<<<< FIM RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
+                        "cnpj": JADLOG_CPF_CNPJ, 
+                        "conta": JADLOG_ID_EMPRESA, 
                         "contrato": null, 
                         "modalidade": 3, 
                         "tpentrega": "D", 
@@ -98,10 +96,8 @@ app.post('/cotacao', async (req, res) => {
                         "cepdes": cepDestino,
                         "frap": null,
                         "peso": pesoTotal,
-                        // <<<<<<< ATENÇÃO AQUI! RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
                         "cnpj": JADLOG_CPF_CNPJ,
                         "conta": JADLOG_ID_EMPRESA,
-                        // <<<<<<< FIM RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
                         "contrato": null,
                         "modalidade": 5, 
                         "tpentrega": "D",
