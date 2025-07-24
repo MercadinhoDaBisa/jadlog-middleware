@@ -14,14 +14,7 @@ const agent = new https.Agent({
     rejectUnauthorized: false
 });
 
-// --- Variáveis de Ambiente da Jadlog e Yampi ---
-const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
-const JADLOG_API_TOKEN = process.env.JADLOG_TOKEN; // Usando JADLOG_TOKEN do .env
-const JADLOG_COD_CLIENTE = process.env.COD_CLIENTE; // Usando COD_CLIENTE do .env para 'conta'
-const JADLOG_CNPJ_REMETENTE = process.env.JADLOG_USER; // Usando JADLOG_USER do .env para 'cnpj'
-// NOTA: CONTA_CORRENTE e TIPO_FRETE/MODALIDADE do seu .env
-// serão usados diretamente no payload, não como variáveis separadas aqui.
-// Modalidade 3 é rodoviário (modalidade padrão da sua doc)
+// As variáveis de ambiente serão acessadas diretamente via process.env.<NOME_DA_VARIAVEL>
 
 app.post('/cotacao', async (req, res) => {
     console.log('Headers Recebidos:', req.headers);
@@ -30,14 +23,15 @@ app.post('/cotacao', async (req, res) => {
     const requestBodyRaw = req.body;
 
     // --- Validação de Segurança Yampi ---
-    if (!yampiSignature || !YAMPI_SECRET_TOKEN) {
+    // Usando YAMPI_SECRET_TOKEN diretamente do process.env
+    if (!yampiSignature || !process.env.YAMPI_SECRET_TOKEN) {
         console.error('Erro de Segurança: Assinatura Yampi ou Chave Secreta ausente.');
         return res.status(401).json({ error: 'Acesso não autorizado.' });
     }
 
     let calculatedSignature;
     try {
-        const hmac = crypto.createHmac('sha256', YAMPI_SECRET_TOKEN);
+        const hmac = crypto.createHmac('sha256', process.env.YAMPI_SECRET_TOKEN);
         const parsedBody = JSON.parse(requestBodyRaw.toString('utf8'));
         const normalizedBodyString = JSON.stringify(parsedBody);
         hmac.update(normalizedBodyString);
@@ -63,15 +57,12 @@ app.post('/cotacao', async (req, res) => {
         const valorDeclarado = yampiData.amount || 0;
 
         let pesoTotal = 0;
-        // let qtdeVolumeTotal = 0; // Não usado diretamente no payload Jadlog para peso/cubagem total
 
         if (yampiData.skus && Array.isArray(yampiData.skus)) {
             yampiData.skus.forEach(sku => {
                 const pesoItem = sku.weight || 0;
                 const quantidadeItem = sku.quantity || 1;
-                
                 pesoTotal += pesoItem * quantidadeItem;
-                // Para a Jadlog, parece que o peso total é enviado, não volumes individuais de cubagem.
             });
         }
 
@@ -79,35 +70,36 @@ app.post('/cotacao', async (req, res) => {
 
         // --- Cotação Jadlog ---
         try {
-            // As variáveis do .env agora são usadas diretamente nos campos apropriados
+            // Ajustando tpentrega com base em TIPO_FRETE (assumindo '0' para Domiciliar 'D')
+            const tipoEntrega = process.env.TIPO_FRETE === '0' ? 'D' : 'P'; 
+            
             const payloadJadlog = {
                 "frete": [
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
-                        "frap": null, // Não definido no .env, usar null conforme doc
+                        "frap": null, 
                         "peso": pesoTotal,
-                        "cnpj": JADLOG_CNPJ_REMETENTE, // Usando JADLOG_USER do .env
-                        "conta": JADLOG_COD_CLIENTE, // Usando COD_CLIENTE do .env
-                        "contrato": null, // Não definido no .env, usar null conforme doc
-                        "modalidade": process.env.MODALIDADE ? parseInt(process.env.MODALIDADE) : 3, // Usando MODALIDADE do .env, default 3
-                        "tpentrega": process.env.TIPO_FRETE === '0' ? 'D' : 'P', // Exemplo: '0' para Domiciliar, outro para Posta (verificar doc Jadlog)
+                        "cnpj": process.env.JADLOG_USER, // Usando JADLOG_USER diretamente do process.env
+                        "conta": process.env.COD_CLIENTE, // Usando COD_CLIENTE diretamente do process.env
+                        "contrato": null, 
+                        "modalidade": parseInt(process.env.MODALIDADE), // Usando MODALIDADE diretamente do process.env
+                        "tpentrega": tipoEntrega, 
                         "tpseguro": "N", // Tipo de seguro (N = Normal, A = Apólice)
                         "vldeclarado": valorDeclarado,
-                        "vlcoleta": 0 // Valor da coleta (0 se não houver)
+                        "vlcoleta": 0 
                     },
-                    // Você pode adicionar outras modalidades aqui se desejar.
-                    // Exemplo para Modalidade 5 (Jadlog Expresso)
+                    // Adicionando a modalidade 5 (Expresso) como uma segunda opção para demonstração
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
                         "frap": null,
                         "peso": pesoTotal,
-                        "cnpj": JADLOG_CNPJ_REMETENTE,
-                        "conta": JADLOG_COD_CLIENTE,
+                        "cnpj": process.env.JADLOG_USER,
+                        "conta": process.env.COD_CLIENTE,
                         "contrato": null,
-                        "modalidade": 5, 
-                        "tpentrega": process.env.TIPO_FRETE === '0' ? 'D' : 'P',
+                        "modalidade": 5, // Jadlog Expresso
+                        "tpentrega": tipoEntrega,
                         "tpseguro": "N",
                         "vldeclarado": valorDeclarado,
                         "vlcoleta": 0
@@ -125,7 +117,7 @@ app.post('/cotacao', async (req, res) => {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${JADLOG_API_TOKEN}` // Usando o token JWT Jadlog
+                        'Authorization': `Bearer ${process.env.JADLOG_TOKEN}` // Usando JADLOG_TOKEN diretamente do process.env
                     },
                     httpsAgent: agent 
                 }
@@ -180,9 +172,6 @@ app.post('/cotacao', async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.send('Middleware da Jadlog rodando');
-});
-
+// Usando PORT diretamente do process.env
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
