@@ -1,5 +1,5 @@
 require('dotenv').config();
-const express = require('express');
+const express = require = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
 const https = require('https'); 
@@ -15,10 +15,9 @@ const agent = new https.Agent({
 
 // --- Variáveis de Ambiente ---
 const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
-const JADLOG_TOKEN = process.env.JADLOG_TOKEN; // Este deve ser o TOKEN da API da Jadlog
-const JADLOG_ID_EMPRESA = process.env.JADLOG_ID_EMPRESA; // Este é o 'conta'
-const JADLOG_CPF_CNPJ = process.env.JADLOG_CPF_CNPJ; // Este é o 'cnpj' do remetente
-// JADLOG_PASSWORD não é mais necessário para autenticação via Bearer Token, mas pode ser útil para outros endpoints.
+const JADLOG_TOKEN = process.env.JADLOG_TOKEN; 
+const JADLOG_ID_EMPRESA = process.env.JADLOG_ID_EMPRESA; 
+const JADLOG_CPF_CNPJ = process.env.JADLOG_CPF_CNPJ; 
 
 app.post('/cotacao', async (req, res) => {
     console.log('Headers Recebidos:', req.headers);
@@ -55,7 +54,7 @@ app.post('/cotacao', async (req, res) => {
         const yampiData = JSON.parse(requestBodyRaw.toString('utf8'));
         console.log('Payload Yampi Recebido:', JSON.stringify(yampiData, null, 2));
 
-        const cepOrigem = "30720404"; // CEP de origem fixo
+        const cepOrigem = "30720404"; 
         const cepDestino = yampiData.zipcode ? yampiData.zipcode.replace(/\D/g, '') : null;
         const valorDeclarado = yampiData.amount || 0;
 
@@ -66,10 +65,7 @@ app.post('/cotacao', async (req, res) => {
             yampiData.skus.forEach(sku => {
                 const pesoItem = sku.weight || 0;
                 const quantidadeItem = sku.quantity || 1;
-                // const comprimento = sku.length || 0; // Não usado diretamente no payload Jadlog
-                // const largura = sku.width || 0;     // Não usado diretamente no payload Jadlog
-                // const altura = sku.height || 0;      // Não usado diretamente no payload Jadlog
-
+                
                 pesoTotal += pesoItem * quantidadeItem;
                 qtdeVolumeTotal += quantidadeItem; 
             });
@@ -79,33 +75,35 @@ app.post('/cotacao', async (req, res) => {
 
         // --- Cotação Jadlog ---
         try {
-            // <<<<<<< ATENÇÃO AQUI! ALTERAÇÕES DE AUTENTICAÇÃO E PAYLOAD
             const payloadJadlog = {
                 "frete": [
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
-                        "frap": null, // Conforme documentação
+                        "frap": null,
                         "peso": pesoTotal,
+                        // <<<<<<< ATENÇÃO AQUI! RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
                         "cnpj": JADLOG_CPF_CNPJ, // CNPJ do remetente
-                        "conta": JADLOG_ID_EMPRESA, // Conta do correntista (ou null se não for)
-                        "contrato": null, // Conforme documentação
-                        "modalidade": 3, // Modalidade Rodoviário (exemplo da doc)
-                        "tpentrega": "D", // Tipo de entrega (D = Domiciliar)
-                        "tpseguro": "N", // Tipo de seguro (N = Normal, A = Apólice)
+                        "conta": JADLOG_ID_EMPRESA, // Conta do correntista (ou null se não for necessário)
+                        // <<<<<<< FIM RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
+                        "contrato": null, 
+                        "modalidade": 3, 
+                        "tpentrega": "D", 
+                        "tpseguro": "N", 
                         "vldeclarado": valorDeclarado,
-                        "vlcoleta": 0 // Valor da coleta (0 se não houver)
+                        "vlcoleta": 0 
                     },
-                    // Você pode adicionar outras modalidades aqui se desejar, como a 5 (Jadlog Expresso)
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
                         "frap": null,
                         "peso": pesoTotal,
+                        // <<<<<<< ATENÇÃO AQUI! RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
                         "cnpj": JADLOG_CPF_CNPJ,
                         "conta": JADLOG_ID_EMPRESA,
+                        // <<<<<<< FIM RE-ADICIONANDO CNPJ E CONTA AO PAYLOAD
                         "contrato": null,
-                        "modalidade": 5, // Exemplo: Jadlog Expresso
+                        "modalidade": 5, 
                         "tpentrega": "D",
                         "tpseguro": "N",
                         "vldeclarado": valorDeclarado,
@@ -113,7 +111,6 @@ app.post('/cotacao', async (req, res) => {
                     }
                 ]
             };
-            // <<<<<<< FIM ALTERAÇÕES DE PAYLOAD
 
             console.log('Payload Jadlog Enviado:', JSON.stringify(payloadJadlog, null, 2));
 
@@ -125,7 +122,6 @@ app.post('/cotacao', async (req, res) => {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        // <<<<<<< ATENÇÃO AQUI! NOVO CABEÇALHO DE AUTENTICAÇÃO (Bearer Token)
                         'Authorization': `Bearer ${JADLOG_TOKEN}` 
                     },
                     httpsAgent: agent 
@@ -135,10 +131,9 @@ app.post('/cotacao', async (req, res) => {
             if (responseJadlog.data && Array.isArray(responseJadlog.data.frete)) {
                 responseJadlog.data.frete.forEach(freteItem => {
                     if (freteItem.modalidade && freteItem.vlrTotal && freteItem.prazo) {
-                        let serviceName = `Jadlog ${freteItem.modalidade}`; // Nome genérico
+                        let serviceName = `Jadlog ${freteItem.modalidade}`; 
                         if (freteItem.modalidade === 3) serviceName = "Jadlog Rodoviário";
                         if (freteItem.modalidade === 5) serviceName = "Jadlog Expresso";
-                        // Adicione mais mapeamentos se tiver outras modalidades
 
                         opcoesFrete.push({
                             "name": serviceName,
