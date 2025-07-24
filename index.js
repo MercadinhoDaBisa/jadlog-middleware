@@ -1,5 +1,5 @@
 require('dotenv').config();
-const express = require('express'); // <<<<<<< LINHA CORRIGIDA AQUI!
+const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
 const https = require('https'); 
@@ -9,15 +9,19 @@ const app = express();
 app.use(express.raw({ type: 'application/json' }));
 app.use(express.json());
 
+// Agente HTTPS para ignorar validação de certificado (útil para alguns ambientes ou APIs)
 const agent = new https.Agent({
     rejectUnauthorized: false
 });
 
-// --- Variáveis de Ambiente ---
+// --- Variáveis de Ambiente da Jadlog e Yampi ---
 const YAMPI_SECRET_TOKEN = process.env.YAMPI_SECRET_TOKEN;
-const JADLOG_TOKEN = process.env.JADLOG_TOKEN; 
-const JADLOG_ID_EMPRESA = process.env.JADLOG_ID_EMPRESA; 
-const JADLOG_CPF_CNPJ = process.env.JADLOG_CPF_CNPJ; 
+const JADLOG_API_TOKEN = process.env.JADLOG_TOKEN; // Usando JADLOG_TOKEN do .env
+const JADLOG_COD_CLIENTE = process.env.COD_CLIENTE; // Usando COD_CLIENTE do .env para 'conta'
+const JADLOG_CNPJ_REMETENTE = process.env.JADLOG_USER; // Usando JADLOG_USER do .env para 'cnpj'
+// NOTA: CONTA_CORRENTE e TIPO_FRETE/MODALIDADE do seu .env
+// serão usados diretamente no payload, não como variáveis separadas aqui.
+// Modalidade 3 é rodoviário (modalidade padrão da sua doc)
 
 app.post('/cotacao', async (req, res) => {
     console.log('Headers Recebidos:', req.headers);
@@ -54,12 +58,12 @@ app.post('/cotacao', async (req, res) => {
         const yampiData = JSON.parse(requestBodyRaw.toString('utf8'));
         console.log('Payload Yampi Recebido:', JSON.stringify(yampiData, null, 2));
 
-        const cepOrigem = "30720404"; 
+        const cepOrigem = "30720404"; // CEP de origem fixo
         const cepDestino = yampiData.zipcode ? yampiData.zipcode.replace(/\D/g, '') : null;
         const valorDeclarado = yampiData.amount || 0;
 
         let pesoTotal = 0;
-        let qtdeVolumeTotal = 0;
+        // let qtdeVolumeTotal = 0; // Não usado diretamente no payload Jadlog para peso/cubagem total
 
         if (yampiData.skus && Array.isArray(yampiData.skus)) {
             yampiData.skus.forEach(sku => {
@@ -67,7 +71,7 @@ app.post('/cotacao', async (req, res) => {
                 const quantidadeItem = sku.quantity || 1;
                 
                 pesoTotal += pesoItem * quantidadeItem;
-                qtdeVolumeTotal += quantidadeItem; 
+                // Para a Jadlog, parece que o peso total é enviado, não volumes individuais de cubagem.
             });
         }
 
@@ -75,32 +79,35 @@ app.post('/cotacao', async (req, res) => {
 
         // --- Cotação Jadlog ---
         try {
+            // As variáveis do .env agora são usadas diretamente nos campos apropriados
             const payloadJadlog = {
                 "frete": [
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
-                        "frap": null,
+                        "frap": null, // Não definido no .env, usar null conforme doc
                         "peso": pesoTotal,
-                        "cnpj": JADLOG_CPF_CNPJ, 
-                        "conta": JADLOG_ID_EMPRESA, 
-                        "contrato": null, 
-                        "modalidade": 3, 
-                        "tpentrega": "D", 
-                        "tpseguro": "N", 
+                        "cnpj": JADLOG_CNPJ_REMETENTE, // Usando JADLOG_USER do .env
+                        "conta": JADLOG_COD_CLIENTE, // Usando COD_CLIENTE do .env
+                        "contrato": null, // Não definido no .env, usar null conforme doc
+                        "modalidade": process.env.MODALIDADE ? parseInt(process.env.MODALIDADE) : 3, // Usando MODALIDADE do .env, default 3
+                        "tpentrega": process.env.TIPO_FRETE === '0' ? 'D' : 'P', // Exemplo: '0' para Domiciliar, outro para Posta (verificar doc Jadlog)
+                        "tpseguro": "N", // Tipo de seguro (N = Normal, A = Apólice)
                         "vldeclarado": valorDeclarado,
-                        "vlcoleta": 0 
+                        "vlcoleta": 0 // Valor da coleta (0 se não houver)
                     },
+                    // Você pode adicionar outras modalidades aqui se desejar.
+                    // Exemplo para Modalidade 5 (Jadlog Expresso)
                     {
                         "cepori": cepOrigem,
                         "cepdes": cepDestino,
                         "frap": null,
                         "peso": pesoTotal,
-                        "cnpj": JADLOG_CPF_CNPJ,
-                        "conta": JADLOG_ID_EMPRESA,
+                        "cnpj": JADLOG_CNPJ_REMETENTE,
+                        "conta": JADLOG_COD_CLIENTE,
                         "contrato": null,
                         "modalidade": 5, 
-                        "tpentrega": "D",
+                        "tpentrega": process.env.TIPO_FRETE === '0' ? 'D' : 'P',
                         "tpseguro": "N",
                         "vldeclarado": valorDeclarado,
                         "vlcoleta": 0
@@ -118,18 +125,21 @@ app.post('/cotacao', async (req, res) => {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${JADLOG_TOKEN}` 
+                        'Authorization': `Bearer ${JADLOG_API_TOKEN}` // Usando o token JWT Jadlog
                     },
                     httpsAgent: agent 
                 }
             );
 
+            // Resposta da Jadlog é um array de objetos de frete
             if (responseJadlog.data && Array.isArray(responseJadlog.data.frete)) {
                 responseJadlog.data.frete.forEach(freteItem => {
-                    if (freteItem.modalidade && freteItem.vlrTotal && freteItem.prazo) {
-                        let serviceName = `Jadlog ${freteItem.modalidade}`; 
+                    // Verifica se a cotação foi bem-sucedida para esta modalidade
+                    if (freteItem.modalidade && freteItem.vlrTotal !== undefined && freteItem.prazo !== undefined) {
+                        let serviceName = `Jadlog Modalidade ${freteItem.modalidade}`; 
                         if (freteItem.modalidade === 3) serviceName = "Jadlog Rodoviário";
                         if (freteItem.modalidade === 5) serviceName = "Jadlog Expresso";
+                        // Adicione mais mapeamentos para outras modalidades se necessário
 
                         opcoesFrete.push({
                             "name": serviceName,
@@ -139,6 +149,7 @@ app.post('/cotacao', async (req, res) => {
                             "quote_id": `jadlog_cotacao_${freteItem.modalidade}`
                         });
                     } else if (freteItem.status && freteItem.status.msg) {
+                        // Loga erros específicos para cada modalidade se houver
                         console.warn(`Jadlog: Erro na modalidade ${freteItem.modalidade}: ${freteItem.status.msg}`);
                     }
                 });
@@ -150,7 +161,9 @@ app.post('/cotacao', async (req, res) => {
         } catch (error) {
             console.error('Erro na requisição Jadlog ou processamento:', error.message);
             if (error.response && error.response.data) {
-                console.error('Detalhes do erro da Jadlog:', error.response.data);
+                console.error('Detalhes do erro da Jadlog:', JSON.stringify(error.response.data, null, 2));
+            } else {
+                console.error('Nenhum detalhe de resposta de erro da Jadlog disponível.');
             }
         }
 
